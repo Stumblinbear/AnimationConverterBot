@@ -13,7 +13,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Start the app
-WORKDIR /usr/src/app
+WORKDIR /
 
 COPY package*.json ./
 
