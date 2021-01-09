@@ -155,9 +155,9 @@ async function saveUsers() {
                                 return;
                             }
                             
-                            console.log(file);
-                            
-                            bot.sendDocument(msg.chat.id, fs.createReadStream(file));
+                            bot.sendDocument(msg.chat.id, fs.createReadStream(file)).then(() => {
+                                fs.unlinkSync(file); 
+                            });
                         });
                     }, function (err) {
                         console.log('Error: ' + err);
@@ -210,7 +210,9 @@ async function saveUsers() {
                                             
                                             console.log(file);
                                             
-                                            bot.sendDocument(msg.chat.id, fs.createReadStream(file));
+                                            bot.sendDocument(msg.chat.id, fs.createReadStream(file)).then(() => {
+                                                fs.unlinkSync(file); 
+                                            });
                                         });
                                     }, function (err) {
                                         console.log('Error: ' + err);
