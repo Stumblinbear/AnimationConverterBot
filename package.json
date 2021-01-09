@@ -13,6 +13,7 @@
         "@google-cloud/storage": "^5.7.1",
         "express": "^4.17.1",
         "ffmpeg": "0.0.4",
+        "localenv": "^0.2.2",
         "node-telegram-bot-api": "^0.40.0",
         "puppeteer-lottie": "^1.0.6"
     }

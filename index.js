@@ -1,4 +1,11 @@
+require('localenv');
+
 const fs = require('fs');
+
+const data = fs.readFileSync('node_modules/puppeteer-lottie/index.js', { encoding: 'utf-8' });
+const result = data.replace('for (let frame = 1; frame <= numFrames; ++frame) {', 'for (let frame = 0; frame < numFrames; ++frame) {');
+fs.writeFileSync('node_modules/puppeteer-lottie/index.js', result);
+
 const zlib = require('zlib');
 
 const renderLottie = require('puppeteer-lottie');
@@ -42,7 +49,9 @@ function loadUsers() {
         userFile.createReadStream()
             .on('data', chunk => chunks.push(chunk))
             .on('error', reject)
-            .on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+            .on('end', () => {
+                resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+            });
     });
 }
 
@@ -50,9 +59,12 @@ async function saveUsers() {
     return new Promise((resolve, reject) => {
         if(!users) return reject();
 
-        const stream = userFile.createWriteStream({ resumable: false });
+        const stream = userFile.createWriteStream({
+            contentType: 'application/json',
+            resumable: false
+        });
         
-        stream.write(JSON.stringify(users, null, 4), reject);
+        stream.write(JSON.stringify(users, null, 4));
 
         stream.end(resolve);
     });
@@ -61,7 +73,13 @@ async function saveUsers() {
 (async () => {
     users = await loadUsers();
 
+    if(!users)
+        throw new Error('Unable to load ' + process.env.USERS_FILE);
+
     const bot = createBot();
+
+    if(!fs.existsSync('./temp'))
+        fs.mkdirSync('./temp');
 
     bot.on('message', async (msg) => {
         if(msg.from.is_bot) return;
@@ -119,7 +137,7 @@ async function saveUsers() {
         bot.sendMessage(msg.chat.id, 'Output format changed to ' + users[msg.chat.id].format);
     });
 
-    bot.on('message', (msg) => {
+    /*bot.on('message', (msg) => {
         let fileId = null;
 
         if(msg.animation) {
@@ -167,7 +185,7 @@ async function saveUsers() {
                     console.error(e.msg);
                 }
             });
-    });
+    });*/
 
     bot.on('sticker', (msg) => {
         if(!msg.sticker.is_animated) {
@@ -198,7 +216,11 @@ async function saveUsers() {
                             height: 1024
                         }).then(() => {
                             if(user.format == 'mp4')
-                                bot.sendVideo(msg.chat.id, fs.createReadStream(file + '.mp4'));
+                                bot.sendVideo(msg.chat.id, fs.createReadStream(file + '.mp4')).then(() => {
+                                    fs.unlinkSync(file + '.tgs'); 
+                                    fs.unlinkSync(file + '.json'); 
+                                    fs.unlinkSync(file + '.mp4');
+                                });
                             else{
                                 try {
                                     new ffmpeg(file + '.mp4').then(function (video) {
@@ -211,7 +233,10 @@ async function saveUsers() {
                                             console.log(file);
                                             
                                             bot.sendDocument(msg.chat.id, fs.createReadStream(file)).then(() => {
-                                                fs.unlinkSync(file); 
+                                                fs.unlinkSync(file + '.tgs'); 
+                                                fs.unlinkSync(file + '.json'); 
+                                                fs.unlinkSync(file + '.mp4'); 
+                                                fs.unlinkSync(file + '.' + user.format); 
                                             });
                                         });
                                     }, function (err) {
