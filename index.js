@@ -27,7 +27,7 @@ function createBot() {
         bot.processUpdate(req.body);
             res.sendStatus(200);
         });
-        app.listen(port);
+        app.listen(process.env.PORT);
 
         return bot;
     }else{
