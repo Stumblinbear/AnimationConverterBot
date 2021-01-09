@@ -16,7 +16,6 @@ const FORMATS = ['mp4', 'swf'];
 
 const { Storage } = require('@google-cloud/storage');
 const storage = new Storage();
-const userFile = storage.bucket(process.env.BUCKET_ID).file(process.env.USERS_FILE);
 
 const TelegramBot = require('node-telegram-bot-api');
 
@@ -43,38 +42,49 @@ function createBot() {
 }
 
 function loadUsers() {
-    return new Promise((resolve, reject) => {
-        const chunks = [];
+    if(!!process.env.BUCKET_ID) {
+        return new Promise((resolve, reject) => {
+            const chunks = [];
 
-        userFile.createReadStream()
-            .on('data', chunk => chunks.push(chunk))
-            .on('error', reject)
-            .on('end', () => {
-                resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
-            });
-    });
+            storage.bucket(process.env.BUCKET_ID).file(process.env.USERS_FILE).createReadStream()
+                .on('data', chunk => chunks.push(chunk))
+                .on('error', reject)
+                .on('end', () => {
+                    resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+                });
+        });
+    }else{
+        if(fs.existsSync('./users.json'))
+            return JSON.parse(fs.readFileSync('./users.json'));
+        else
+            return { };
+    }
 }
 
 async function saveUsers() {
-    return new Promise((resolve, reject) => {
-        if(!users) return reject();
+    if(!!process.env.BUCKET_ID) {
+        return new Promise((resolve, reject) => {
+            if(!users) return reject();
 
-        const stream = userFile.createWriteStream({
-            contentType: 'application/json',
-            resumable: false
+            const stream = storage.bucket(process.env.BUCKET_ID).file(process.env.USERS_FILE).createWriteStream({
+                contentType: 'application/json',
+                resumable: false
+            });
+            
+            stream.write(JSON.stringify(users, null, 4));
+
+            stream.end(resolve);
         });
-        
-        stream.write(JSON.stringify(users, null, 4));
-
-        stream.end(resolve);
-    });
+    }else{
+        fs.writeFileSync('./users.json', JSON.stringify(users, null, 4));
+    }
 }
 
 (async () => {
     users = await loadUsers();
 
     if(!users)
-        throw new Error('Unable to load ' + process.env.USERS_FILE);
+        throw new Error('Unable to load users');
 
     const bot = createBot();
 
