@@ -25,6 +25,8 @@ let users;
 
 function createBot() {
     if(process.env.TELEGRAM_BOT_WEBHOOK) {
+        console.log(`Webhook: ${process.env.TELEGRAM_BOT_WEBHOOK}/bot/${process.env.TELEGRAM_BOT_TOKEN}`);
+
         const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
         bot.setWebHook(`${process.env.TELEGRAM_BOT_WEBHOOK}/bot/${process.env.TELEGRAM_BOT_TOKEN}`);
     
@@ -39,6 +41,8 @@ function createBot() {
 
         return bot;
     }else{
+        console.log(`Token: ${process.env.TELEGRAM_BOT_TOKEN}`);
+
         return new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
     }
 }
