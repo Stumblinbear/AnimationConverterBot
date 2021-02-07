@@ -1,3 +1,15 @@
+build:
+	docker build -t animationconverterbot .
+
+clean:
+	docker stop AnimationConverterBot
+	docker rm AnimationConverterBot
+
+deploy:
+	docker run -d -it --name=AnimationConverterBot animationconverterbot
+	
+local: build clean deploy
+
 cloud-build:
 	gcloud builds submit --tag gcr.io/commish-me/animation-converter:1.0.0 .
 

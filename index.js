@@ -2,9 +2,11 @@ require('localenv');
 
 const fs = require('fs');
 
-const data = fs.readFileSync('node_modules/puppeteer-lottie/index.js', { encoding: 'utf-8' });
+const PUPPETEER_FILE = require.resolve('puppeteer-lottie');
+
+const data = fs.readFileSync(PUPPETEER_FILE, { encoding: 'utf-8' });
 const result = data.replace('for (let frame = 1; frame <= numFrames; ++frame) {', 'for (let frame = 0; frame < numFrames; ++frame) {');
-fs.writeFileSync('node_modules/puppeteer-lottie/index.js', result);
+fs.writeFileSync(PUPPETEER_FILE, result);
 
 const zlib = require('zlib');
 
@@ -216,6 +218,9 @@ async function saveUsers() {
                     .pipe(fs.createWriteStream(file + '.json'))
                     .on('finish', () => {
                         renderLottie({
+                            puppeteerOptions: {
+                                args: ['--no-sandbox', '--disable-setuid-sandbox']
+                            },
                             path: file + '.json',
                             output: file + '.mp4',
                             inject: {
