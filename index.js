@@ -1,5 +1,7 @@
 require('localenv');
 
+const { exec } = require("child_process");
+
 const fs = require('fs');
 
 const PUPPETEER_FILE = require.resolve('puppeteer-lottie');
@@ -14,7 +16,7 @@ const renderLottie = require('puppeteer-lottie');
 const DEFAULT_BACKGROUND = '#5B99BC';
 
 const ffmpeg = require('ffmpeg');
-const FORMATS = ['mp4', 'swf'];
+const FORMATS = [ 'mp4', 'swf', 'gif'/*, 'apng'*/ ];
 
 const { Storage } = require('@google-cloud/storage');
 const storage = new Storage();
@@ -226,15 +228,23 @@ async function saveUsers() {
                                 args: ['--no-sandbox', '--disable-setuid-sandbox']
                             },
                             path: file + '.json',
-                            output: file + '.mp4',
+                            output: file + (user.format == 'apng' ? '%s.png' : '.mp4'),
                             inject: {
                                 style: 'body { background: ' + (user.background || DEFAULT_BACKGROUND) + '; background-size: cover; }'
                             },
                             renderer: 'svg',
-                            width: 1024,
-                            height: 1024
+                            width: (user.format == 'apng' ? 512 : 1024),
+                            height: (user.format == 'apng' ? 512 : 1024)
                         }).then(() => {
-                            if(user.format == 'mp4')
+                            if(user.format == 'apng') {
+                                exec(`apngasm "${file}.png" "${file}*.png" 1 30 -z2`, (error, stdout, stderr) => {
+                                    if(error) { console.error(`error: ${error.message}`); }
+                                    else if(stderr) { console.log(`stderr: ${stderr}`); }
+                                    else{
+                                        console.log(`stdout: ${stdout}`);
+                                    }
+                                });
+                            }else if(user.format == 'mp4')
                                 bot.sendVideo(msg.chat.id, fs.createReadStream(file + '.mp4')).then(() => {
                                     fs.unlinkSync(file + '.tgs'); 
                                     fs.unlinkSync(file + '.json'); 
